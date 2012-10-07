@@ -1,0 +1,17 @@
+* About
+  This project parses jar files and generates sqlite database with the
+  data.
+
+  I'm intended to use this database (or this project) in
+  [[https://github.com/m039/cedet-x-android][cedet-x-android]] project to generate templates and for autocomplete.
+
+* Usage
+  If you want to use this parser, just tell me and I add more info
+  about it.
+  
+* Note  
+  This code is far from being perfect from my point of view, because I
+  hadn't been coding in clojure (or lisp) for a long time.
+
+* License
+  Distributed under the Eclipse Public License, the same as Clojure.

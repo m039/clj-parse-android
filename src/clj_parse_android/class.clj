@@ -48,7 +48,13 @@
   (when (java.lang.reflect.Modifier/isFinal modifier) "final"))
 
 (defn is-interface [ modifier ]
-  (when (java.lang.reflect.Modifier/isInterface modifier) "interface"))
+  (cond
+   (instance? Class modifier)
+   (if (.isInterface modifier) 1 0)
+
+   (instance? Integer modifier)
+   (when (java.lang.reflect.Modifier/isInterface modifier) "interface")
+  ))
 
 (defn is-native [ modifier ]
   (when (java.lang.reflect.Modifier/isNative modifier) "native"))

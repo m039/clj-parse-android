@@ -12,17 +12,19 @@
 
 (defn ^JarFile
   jar-file [ path ]
-  (let [file (io/as-file path)]
-    (if (.exists file)
-      (java.util.jar.JarFile. file)
-      nil)))
+  (if (not (nil? path))
+    (let [file (io/as-file path)]
+      (if (.exists file)
+        (java.util.jar.JarFile. file)
+        nil))))
 
 (defn ^ClassLoader
   jar-class-loader [ path ]
-  (let [file (io/as-file path)]
-    (if (.exists file)
-      (URLClassLoader/newInstance (into-array [ (URL. (str "jar:file://" (.getAbsolutePath file) "!/")) ]))
-      nil)))
+  (if (not (nil? path))
+    (let [file (io/as-file path)]
+      (if (.exists file)
+        (URLClassLoader/newInstance (into-array [ (URL. (str "jar:file://" (.getAbsolutePath file) "!/")) ]))
+        nil))))
 
 ;;
 ;;

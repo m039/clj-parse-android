@@ -1,8 +1,10 @@
 (ns clj-parse-android.main
   (:gen-class)
-  (:use [clj-parse-android jar class])
-  
-  (:require [ clojopts.core :as opts]
+  (:use [clj-parse-android jar class]
+        )
+
+  (:require [clojopts.core :as opts]
+            [clojopts.help :as opts-help]
             [clojure.java.jdbc :as sql]))
 
 (def ^:dynamic *argv* [ "--jar=/opt/android-sdk/platforms/android-15/android.jar"
@@ -21,31 +23,49 @@
                 *argv*
                 (opts/with-arg jar j "The jar file to parse")
                 (opts/with-arg output o "The place to put the database")
-                (opts/optional-arg source s "Add extra info from the sources")) ]
-
+                (opts/optional-arg source s "Add extra info from the sources"))]
+            
       (binding [*jar-file* (jar-file (:jar opts))
                 *jar-class-loader* (jar-class-loader (:jar opts))
                 *output* (:output opts)]
 
-        ;;
-        ;; The whole procedure
-        ;; 
-        (sql/with-connection {:subprotocol "sqlite"
-                              :subname *output* }
+        (when (and *jar-file* *output*)
+          
+          ;;
+          ;; The whole procedure
+          ;;
 
-          (sql/do-commands "drop table if exists class")
+          (let [classes (get-class *jar-file*)
+                classes-count (count classes)]
 
-          (sql/create-table "class"
-                            ["simple_name" "string"]
-                            ["name" "string"]
-                            ["methods" "string"])
+            (sql/with-connection {:subprotocol "sqlite"
+                                  :subname *output* }
 
-          (doseq [class (get-class *jar-file*)]
-            (sql/insert-values "class"
-                               [ "simple_name" "name" "methods" ]
-                               [ (get-simple-name class)
-                                 (get-name class)
-                                 (declared-methods-to-string (get-declared-methods class)) ]
-                               )))
+              (sql/do-commands "drop table if exists class")
+
+              (sql/create-table "class"
+                                ["simple_name" "string"]
+                                ["name" "string"]
+                                ["methods" "string"]
+                                ["is_interface" "integer"])
+
+              (println (str "Parses '" (:jar opts) "':"))
+
+              (loop [i 1
+                     classes classes]
+                (when (seq? classes)
+                  (let [class (first classes)]
+                    (sql/insert-values "class"
+                                       [ "simple_name" "name" "methods" "is_interface" ]
+                                       [ (get-simple-name class)
+                                         (get-name class)
+                                         (declared-methods-to-string (get-declared-methods class))
+                                         (is-interface class)])
+                    (print (format "\r proceseed [ %6d / %6d ]" i classes-count)))
+
+                  (recur (inc i) (next classes))))
+
+              (println)
+              (println (str "The output is '" *output* "'")))))
         ))
     ))
