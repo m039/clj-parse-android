@@ -10,6 +10,9 @@
 (defn get-simple-name [ ^Class class ]
   (.getSimpleName class))
 
+(defn get-enclosing-class [ ^Class class ]
+  (.getEnclosingClass class))
+
 ;;
 ;; Class wrapper
 ;;
@@ -22,7 +25,8 @@
 ;;
 
 (defn get-name [ method-or-class ]
-  (.getName method-or-class))
+  (if (not (nil? method-or-class))
+    (.getName method-or-class)))
 
 (defn get-parameter-types [ ^java.lang.reflect.Method method ]
   (.getParameterTypes method))
