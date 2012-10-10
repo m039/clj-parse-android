@@ -30,30 +30,30 @@
       (doseq [jar (:jar opts)]
         (println (str "Adding to classpath: " jar))
         (pomegranate/add-classpath jar))
-      
-      (doseq [jar (:jar opts)]
-        (binding [*jar-file* (jar-file jar)
-                  *output* (:output opts)]
 
-          ;;
-          ;; The whole procedure
-          ;;
-          
-          (let [classes (get-class *jar-file*)
-                classes-count (count classes)]
+      (sql/with-connection {:subprotocol "sqlite"
+                            :subname (:output opts) }
 
-            (sql/with-connection {:subprotocol "sqlite"
-                                  :subname *output* }
+        (sql/do-commands "drop table if exists class")
 
-              (sql/do-commands "drop table if exists class")
+        (sql/create-table "class"
+                          ["simple_name" "string"]
+                          ["name" "string"]
+                          ["methods" "string"]
+                          ["is_interface" "integer"]
+                          ["enclosing_class__name" "string"]
+                          )
+        
+        (doseq [jar (:jar opts)]
+          (binding [*jar-file* (jar-file jar)
+                    *output* (:output opts)]
 
-              (sql/create-table "class"
-                                ["simple_name" "string"]
-                                ["name" "string"]
-                                ["methods" "string"]
-                                ["is_interface" "integer"]
-                                ["enclosing_class__name" "string"]
-                                )
+            ;;
+            ;; The whole procedure
+            ;;
+            
+            (let [classes (get-class *jar-file*)
+                  classes-count (count classes)]              
 
               (println (str "Parses '" jar "':"))
 
@@ -61,20 +61,23 @@
                      classes classes]
                 (when (seq? classes)
                   (let [class (first classes)]
-                    (sql/insert-values "class"
-                                       [ "simple_name" "name" "methods" "is_interface" "enclosing_class__name"
-                                         ]
-                                       [ (get-simple-name class)
-                                         (get-name class)
-                                         (declared-methods-to-string (get-declared-methods class))
-                                         (is-interface class)
-                                         (get-name (get-enclosing-class class))
-                                         ])
-                    (print (format "\r proceseed [ %6d / %6d ]" i classes-count)))
+                    (try 
+                      (sql/insert-values "class"
+                                         [ "simple_name" "name" "methods" "is_interface" "enclosing_class__name"
+                                           ]
+                                         [ (get-simple-name class)
+                                           (get-name class)
+                                           (declared-methods-to-string (get-declared-methods class))
+                                           (is-interface class)
+                                           (get-name (get-enclosing-class class))
+                                           ])
+                      
+                      (catch NoClassDefFoundError e))
 
-                  (recur (inc i) (next classes))))
+                    (recur (inc i) (next classes)))))
 
-              (println)
-              (println (str "The output is '" *output* "'"))))))
+              ))
+          
+          ))
         )))
 

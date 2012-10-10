@@ -41,9 +41,15 @@
 (defn
   get-class [ ^JarFile jar-file ]
   "Return the sequence of classes in the jar-file"
-  (let [classes (for [class-name (get-class-names jar-file)]
-                  (try
-                    (Class/forName class-name)
-                    (catch Exception e nil)))
+  (let [classes (loop [names (get-class-names jar-file)
+                       classes () ]
+                  (if (seq? names)
+                    (let [class (try
+                                  (Class/forName (first names))
+                                  (catch Exception e)
+                                  (catch ExceptionInInitializerError e)
+                                  (catch NoClassDefFoundError e))]
+                      (recur (next names) (conj classes class)))
+                    classes))
         res (filter #(not (nil? %)) classes)]
     res))
